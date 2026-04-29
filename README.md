@@ -66,7 +66,7 @@ npm install
 Create a `.env` file in the root directory:
 
 ```bash
-BASE_URL=https://api.zedu.chat
+BASE_URL=https://api.staging.zedu.chat/api/v1
 EMAIL=your_email@example.com
 PASSWORD=your_password
 ```
