@@ -11,7 +11,7 @@ describe("User Tests", () => {
   before(async () => {
     token = await getToken();
   });
-
+// Positive Test cases
   it("should get user profile with valid token", async () => {
     const response = await axios.get(`${BASE_URL}/users/me`, {
       headers: {
@@ -44,7 +44,7 @@ describe("User Tests", () => {
     expect(response.status).to.equal(200);
     expect(response.data.status).to.be.a("string");
   });
-// Negative test case 
+// Negative test cases 
   
   it("Get profile with invalid token", async function () {
   try {
@@ -72,4 +72,40 @@ it("Get organisations without token", async function () {
   }
 });
 
+//Edge test cases
+
+it("should fail when using excessively long user ID", async () => {
+  const longId = "a".repeat(100);
+
+  try {
+    await axios.get(`${BASE_URL}/users/${longId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    throw new Error("Expected failure but succeeded");
+  } catch (err) {
+    expect(err.response.status).to.equal(400);
+  }
 });
+
+it("should fail when updating profile with null values", async () => {
+  try {
+    await axios.put(
+      `${BASE_URL}/users/me`,
+      {
+        first_name: null,
+        last_name: null,
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    throw new Error("Expected failure but succeeded");
+  } catch (err) {
+    expect(err.response.status).to.equal(422);
+  }
+});
+
+});
+

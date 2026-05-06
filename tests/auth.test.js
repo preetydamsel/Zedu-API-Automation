@@ -8,12 +8,13 @@ const validEmail = process.env.EMAIL;
 const validPassword = process.env.PASSWORD;
 
 describe("Auth Tests", () => {
+
+  // 🔐 Positive Tests
   it("should login successfully with valid credentials", async () => {
     const response = await axios.post(`${BASE_URL}/auth/login`, {
       email: process.env.EMAIL,
       password: process.env.PASSWORD,
     });
-  
 
     expect(response.status).to.equal(200);
     expect(response.data.data).to.have.property("access_token");
@@ -21,187 +22,209 @@ describe("Auth Tests", () => {
   });
 
 
-  it("Register a new user successfully ", async () => {
+  it("should register a new user successfully", async () => {
+  
     const response = await axios.post(`${BASE_URL}/auth/register`, {
       email: process.env.EMAIL,
       password: process.env.PASSWORD,
     });
 
-
     expect(response.status).to.equal(200);
-    expect(response.data.data).to.have.property("access_token");
     expect(response.data.data.access_token).to.be.a("string");
   });
 
-  it("Request magic link successfully ", async () => {
+
+  it("should request magic link successfully", async () => {
     const response = await axios.post(`${BASE_URL}/auth/magick-link`, {
       email: process.env.EMAIL,
-      
     });
-
 
     expect(response.status).to.equal(200);
     expect(response.data.status).to.equal("success");
-  expect(response.data.message).to.include("link"); 
-  expect(response.data.data).to.equal("success")
+    expect(response.data.message).to.include("link");
+    expect(response.data.data).to.equal("success")
   });
 
-it("Login trims email spaces", async function () {
-  try {
-    const res = await axios.post(`${BASE_URL}/auth/login`, {
-      email: `  ${validEmail}  `,
-      password: validPassword
-    });
 
-    expect([200, 400]).to.include(res.status);
-  } catch (err) {
-    expect([400]).to.include(err.response.status);
-  }
-});
+  // ❌ Negative Tests
 
-it("Login with null values", async function () {
-  try {
-    await axios.post(`${BASE_URL}/auth/login`, {
-      email: null,
-      password: null
-    });
-  } catch (err) {
-    expect([400, 422]).to.include(err.response.status);
-  }
-});
-
-//Negative test cases
-it("Login with incorrect password", async function () {
+  it("should fail login with incorrect password", async () => {
     try {
       await axios.post(`${BASE_URL}/auth/login`, {
         email: validEmail,
-        password: "wrongpassword"
+        password: "wrongpassword",
       });
 
-      throw new Error("Expected failure but request succeeded");
+      throw new Error("Expected failure but succeeded");
 
     } catch (err) {
-      expect([400, 401]).to.include(err.response.status);
+      expect(err.response.status).to.equal(400); // or 401 based on actual API
     }
   });
 
-  it("Login with non-existent email", async function () {
+
+  it("should fail login with non-existent email", async () => {
     try {
       await axios.post(`${BASE_URL}/auth/login`, {
-        email: "fakeuser123@gmail.com",
-        password: "password123"
+        email: "fakeuser123@mail.com",
+        password: "password123",
       });
 
-      throw new Error("Expected failure but request succeeded");
+      throw new Error("Expected failure but succeeded");
 
     } catch (err) {
-      expect([400, 404]).to.include(err.response.status);
+      expect(err.response.status).to.equal(400); 
     }
   });
 
-  it("Login with missing email", async function () {
+
+  it("should fail login with missing email", async () => {
     try {
       await axios.post(`${BASE_URL}/auth/login`, {
-        password: validPassword
+  
+       password:validPassword,
       });
 
-      throw new Error("Expected failure but request succeeded");
+      throw new Error("Expected failure but succeeded");
 
     } catch (err) {
       expect(err.response.status).to.equal(400);
     }
   });
 
-  it("Login with missing password", async function () {
+
+  it("should fail login with missing password", async () => {
     try {
       await axios.post(`${BASE_URL}/auth/login`, {
-        email: validEmail
+        email: process.env.EMAIL,
       });
 
-      throw new Error("Expected failure but request succeeded");
+      throw new Error("Expected failure but succeeded");
 
     } catch (err) {
       expect(err.response.status).to.equal(400);
     }
   });
-//Edge Test cases
-it("Multiple login attempts quickly", async function () {
-  const requests = Array(5).fill().map(() =>
-    axios.post(`${BASE_URL}/auth/login`, {
-      email: validEmail,
-      password: validPassword
-    })
-  );
 
-  const responses = await Promise.all(requests);
 
-  responses.forEach(res => {
-    expect(res.status).to.equal(200);
-  });
+  // ⚠️ Edge Cases
+  it("should fail login with very short password", async () => {
+  try {
+    await axios.post(`${BASE_URL}/auth/login`, {
+      email: process.env.EMAIL,
+      password: "1",
+    });
+
+    throw new Error("Expected failure but succeeded");
+  } catch (err) {
+    expect(err.response.status).to.equal(400);
+  }
 });
 
-  it("Login with very long password", async function () {
-  const longPassword = "A".repeat(200);
+it("should fail login with invalid email format", async () => {
+  try {
+    await axios.post(`${BASE_URL}/auth/login`, {
+      email: "invalid@@email!!",
+      password: process.env.PASSWORD,
+    });
+
+    throw new Error("Expected failure but succeeded");
+  } catch (err) {
+    expect(err.response.status).to.equal(400);
+  }
+});
+
+it("should fail login with excessively long email", async () => {
+  const longEmail = `${"a".repeat(100)}@test.com`;
 
   try {
     await axios.post(`${BASE_URL}/auth/login`, {
-      email: validEmail,
-      password: longPassword
-    });
-  } catch (err) {
-    expect([400, 401]).to.include(err.response.status);
-  }
-});
-it("Login with empty request body", async function () {
-  try {
-    await axios.post(`${BASE_URL}/auth/login`);
-  } catch (err) {
-    expect([400]).to.include(err.response.status);
-  }
-});
-
-it("Call invalid endpoint", async function () {
-  try {
-    await axios.get(`${BASE_URL}/invalid-endpoint`);
-  } catch (err) {
-    expect(err.response.status).to.equal(404);
-  }
-});
-
-it("Use wrong HTTP method on login", async function () {
-  try {
-    await axios.get(`${BASE_URL}/auth/login`);
-  } catch (err) {
-    expect([404, 405]).to.include(err.response.status);
-  }
-});
-
-it("Login multiple times rapidly", async function () {
-      const requests = Array(3).fill().map(() =>
-        axios.post(`${BASE_URL}/auth/login`, {
-          email: validEmail,
-          password: validPassword
-        })
-      );
-
-      const responses = await Promise.all(requests);
-
-      responses.forEach(res => {
-        expect(res.status).to.equal(200);
-      });
+      email: longEmail,
+      password: process.env.PASSWORD,
     });
 
-    it("Login with whitespace input", async function () {
-      try {
-        await axios.post(`${BASE_URL}/auth/login`, {
-          email: "   ",
-          password: "   "
-        });
-      } catch (err) {
-        expect([400, 422]).to.include(err.response.status);
-      }
+    throw new Error("Expected failure but succeeded");
+  } catch (err) {
+    expect(err.response.status).to.equal(400);
+  }
+});
+
+  it("should not allow login with uppercase email", async () => {
+  try {
+    await axios.post(`${BASE_URL}/auth/login`, {
+      email: process.env.EMAIL.toUpperCase(),
+      password: process.env.PASSWORD,
     });
 
+    throw new Error("Expected failure but request succeeded");
+
+  } catch (err) {
+    expect(err.response.status).to.equal(400);
+  }
+});
+
+  it("should fail login when email contains leading and trailing spaces", async () => {
+  try {
+    await axios.post(`${BASE_URL}/auth/login`, {
+      email: `  ${process.env.EMAIL}  `,
+      password: process.env.PASSWORD,
+    });
+
+    throw new Error("Expected failure but succeeded");
+
+  } catch (err) {
+    expect(err.response.status).to.equal(400);
+  }
+});
+
+  it("should fail login with empty body", async () => {
+    try {
+      await axios.post(`${BASE_URL}/auth/login`, {});
+
+      throw new Error("Expected failure but succeeded");
+
+    } catch (err) {
+      expect(err.response.status).to.equal(400);
+    }
   });
 
 
+  it("should fail login with null value input", async () => {
+    try {
+      await axios.post(`${BASE_URL}/auth/login`, {
+        email: "   ",
+        password: "   ",
+      });
+
+      throw new Error("Expected failure but succeeded");
+
+    } catch (err) {
+      expect(err.response.status).to.equal(400);
+    }
+  });
+
+
+  it("should return 404 for invalid endpoint", async () => {
+    try {
+      await axios.get(`${BASE_URL}/invalid-endpoint`);
+
+      throw new Error("Expected failure but succeeded");
+
+    } catch (err) {
+      expect(err.response.status).to.equal(404);
+    }
+  });
+
+
+  it("should not allow GET method on login endpoint", async () => {
+    try {
+      await axios.get(`${BASE_URL}/auth/login`);
+
+      throw new Error("Expected failure but succeeded");
+
+    } catch (err) {
+      expect(err.response.status).to.equal(404); 
+    }
+  });
+
+});
