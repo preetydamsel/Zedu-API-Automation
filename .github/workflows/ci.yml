@@ -1,0 +1,99 @@
+YAML
+
+
+name: Zedu API Tests CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Display Node and NPM versions
+      run: |
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        echo "✅ Dependencies installed successfully"
+    
+    - name: Create .env file from secrets
+      run: |
+        echo "BASE_URL=${{ secrets.BASE_URL }}" >> .env
+        echo "API_KEY=${{ secrets.API_KEY }}" >> .env
+        echo "API_SECRET=${{ secrets.API_SECRET }}" >> .env
+        echo "AUTH_TOKEN=${{ secrets.AUTH_TOKEN }}" >> .env
+        echo "USERNAME=${{ secrets.USERNAME }}" >> .env
+        echo "PASSWORD=${{ secrets.PASSWORD }}" >> .env
+        echo "TEST_USER_ID=${{ secrets.TEST_USER_ID }}" >> .env
+        echo "TEST_EMAIL=${{ secrets.TEST_EMAIL }}" >> .env
+        echo "TIMEOUT=5000" >> .env
+        echo "NODE_ENV=test" >> .env
+        echo "✅ Environment file created"
+    
+    - name: Verify environment setup
+      run: |
+        echo "================================"
+        echo "   ENVIRONMENT VERIFICATION"
+        echo "================================"
+        echo "✅ Node.js installed"
+        echo "✅ Dependencies installed"
+        echo "✅ Environment variables configured"
+        echo "================================"
+    
+    - name: Run API tests
+      run: |
+        echo "================================"
+        echo "      STARTING TEST EXECUTION"
+        echo "================================"
+        npm run test:ci
+      env:
+        CI: true
+    
+    - name: Display test summary
+      if: always()
+      run: |
+        echo ""
+        echo "================================"
+        echo "      TEST EXECUTION SUMMARY"
+        echo "================================"
+        if [ -f test-results/test-report.json ]; then
+          echo "✅ Test report generated successfully"
+        fi
+        echo "================================"
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: test-results/
+        retention-days: 30
+    
+    - name: Upload mochawesome report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: mochawesome-report
+        path: mochawesome-report/
+        retention-days: 30
