@@ -5,7 +5,8 @@
   "scripts": {
     "test": "mocha tests --timeout 10000",
     "test:auth": "mocha tests/auth.test.js",
-    "test:user": "mocha tests/users.test.js"
+    "test:user": "mocha tests/users.test.js",
+    "test:ci": "mocha tests --timeout 10000 --reporter json > test-results/test-report.json"
   },
   "keywords": [],
   "author": "",
